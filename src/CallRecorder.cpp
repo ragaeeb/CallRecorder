@@ -23,7 +23,14 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_toa
 		saveValueFor("animations", 1);
 		saveValueFor("autoRecord", 0);
 		saveValueFor("hideAgreement", 0);
-		saveValueFor("output", "/accounts/1000/removable/sdcard/music");
+
+		QString sdDirectory("/accounts/1000/removable/sdcard/voice");
+
+		if ( !QDir(sdDirectory).exists() ) {
+			sdDirectory = "/accounts/1000/shared/voice";
+		}
+
+		saveValueFor("output", sdDirectory);
 	}
 
 	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);

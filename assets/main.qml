@@ -16,7 +16,7 @@ NavigationPane
     {
         settingsAction: SettingsActionItem
         {
-            property variant settingsPage
+            property Page settingsPage
             
             onTriggered:
             {
@@ -31,7 +31,7 @@ NavigationPane
 
         helpAction: HelpActionItem
         {
-            property variant helpPage
+            property Page helpPage
             
             onTriggered:
             {
@@ -62,6 +62,16 @@ NavigationPane
 	        }
 	    }
 	    
+	    shortcuts: [
+	        SystemShortcut {
+	            type: SystemShortcuts.CreateNew
+	            
+	            onTriggered: {
+	                recordButton.clicked()
+	            }
+	        }
+	    ]
+	    
 	    id: mainPage
 	    contentContainer: Container
 	    {
@@ -69,11 +79,12 @@ NavigationPane
 	        horizontalAlignment: HorizontalAlignment.Fill
 	        
 	        Label {
-	            text: qsTr("Welcome to Call Recorder. Please swipe down from the top-bezel and see the Help section for further information on how to use this app.\n\nYou can only record calls in SPEAKERPHONE mode!")
+	            text: qsTr("Swipe down from the top-bezel and see the Help section for information on how to use this app.\n\nYou can only record calls in SPEAKERPHONE mode!")
 	            textStyle.fontSize: FontSize.XSmall
 	            textStyle.textAlign: TextAlign.Center
 	            multiline: true
 	            horizontalAlignment: HorizontalAlignment.Fill
+	            verticalAlignment: VerticalAlignment.Fill
 	            
 		        animations: [
 		            TranslateTransition {
@@ -99,6 +110,8 @@ NavigationPane
 	            horizontalAlignment: HorizontalAlignment.Center
 	            
 	            onClicked: {
+	                mainPage.hideTitleBar()
+	                
 	                if (mainPage.recording) {
 	                    var duration = recorder.duration
 	                    recorder.reset()
@@ -179,64 +192,40 @@ NavigationPane
                 visible: false
             }
             
-            Container
-            {
-                layout: DockLayout {}
-            
-	            Container {
-	                id: backgroundContainer
-	                horizontalAlignment: HorizontalAlignment.Fill
-	                verticalAlignment: VerticalAlignment.Fill
-	                background: Color.Black
-	                visible: false
+            ListView
+	        {
+	            id: listView
+	            
+	            dataModel: ArrayDataModel {
+	                id: theDataModel
 	                
-	                onVisibleChanged: {
-			            if ( visible && app.getValueFor("animations") == 1 ) {
-	    	                fadeIn.play()
-			            }
+	                onItemAdded: {
+	                    separator.visible = true
 	                }
 	                
-	                animations: [
-	                    FadeTransition {
-	                        id: fadeIn
-	                        fromOpacity: 0
-	                        toOpacity: 0.3
-                        }
-	                ]
+	                onItemRemoved: {
+	                    separator.visible = theDataModel.size() != 0
+	                }
 	            }
 	            
-		        ListView
-		        {
-		            id: listView
-		            
-		            dataModel: ArrayDataModel {
-		                id: theDataModel
-		                
-		                onItemAdded: {
-		                    backgroundContainer.visible = separator.visible = true
-		                }
-		                
-		                onItemRemoved: {
-		                    backgroundContainer.visible = separator.visible = theDataModel.size() != 0
-		                }
-		            }
-		            
-		            onActivationChanged: {
-		                if (active) {
-		                    actionSet.activeIndexPath = indexPath
-		                }
-		            }
-		            
-		            onTriggered: {
-		                app.openRecording( "file://"+theDataModel.data(indexPath).uri )
-		            }
-		            
-		            contextActions: [
-		                ActionSet {
-	        	            property variant activeIndexPath
-		                    id: actionSet
-		                    title: theDataModel.data(activeIndexPath).title
-		                    subtitle: {
+	            onActivationChanged: {
+	                if (active) {
+	                    actionSet.activeIndexPath = indexPath
+	                }
+	            }
+	            
+	            onTriggered: {
+	                app.openRecording( "file://"+theDataModel.data(indexPath).uri )
+	            }
+	            
+	            contextActions: [
+	                ActionSet {
+        	            property variant activeIndexPath
+	                    id: actionSet
+	                    title: activeIndexPath ? theDataModel.data(activeIndexPath).title : ""
+	                    subtitle: {
+	                        if (activeIndexPath)
+	                        {
 		                        var duration = theDataModel.data(activeIndexPath).duration
 								var secs = "%1".arg(Math.floor(duration / 1000) % 60);
 								var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
@@ -246,68 +235,70 @@ NavigationPane
 								var minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
 								var hours = hrs > 0 ? "%1:".arg(hrs) : ""
 								return hours+minutes+":"+seconds
-		                    }
-		                    
-		                    DeleteActionItem {
-		                        title: qsTr("Delete")
-		                        
-		                        onTriggered: {
-		                            var result = app.deleteRecording( theDataModel.data(actionSet.activeIndexPath).uri )
-		                            
-		                            if (result) {
-		                                theDataModel.removeAt(actionSet.activeIndexPath)
-		                            }
-		                        }
-		                    }
-		                }
-		            ]
-		
-		            listItemComponents: [
-		                ListItemComponent {
-		                    StandardListItem {
-		                        title: ListItemData.title
-		                        status: {
-		                            var duration = ListItemData.duration
-									var secs = "%1".arg(Math.floor(duration / 1000) % 60);
-									var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
-									var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
-									
-									var seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
-									var minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
-									var hours = hrs > 0 ? "%1:".arg(hrs) : ""
-									return hours+minutes+":"+seconds
-		                        }
-		                    }
-		                }
-		            ]
-		            
-		            horizontalAlignment: HorizontalAlignment.Fill
-		            verticalAlignment: VerticalAlignment.Fill
-		        }
-	            
-	            attachedObjects: [
-					AudioRecorder
-					{
-					    property string currentTrack
-					    property string currentUri
-					    
-						id: recorder
-						onDurationChanged: {
-							var secs = "%1".arg(Math.floor(duration / 1000) % 60);
-							var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
-							var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
-							
-							durationLabel.seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
-							durationLabel.minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
-							durationLabel.hours = hrs > 0 ? "%1:".arg(hrs) : ""
-						}
-						
-						onError: {
-						    mainPage.recording = false;
-						}
-					}
+	                        } else {
+	                            return ""
+	                        }
+	                    }
+	                    
+	                    DeleteActionItem {
+	                        title: qsTr("Delete")
+	                        
+	                        onTriggered: {
+	                            var result = app.deleteRecording( theDataModel.data(actionSet.activeIndexPath).uri )
+	                            
+	                            if (result) {
+	                                theDataModel.removeAt(actionSet.activeIndexPath)
+	                            }
+	                        }
+	                    }
+	                }
 	            ]
-		    }
+	
+	            listItemComponents: [
+	                ListItemComponent {
+	                    StandardListItem {
+	                        title: ListItemData.title
+	                        status: {
+	                            var duration = ListItemData.duration
+								var secs = "%1".arg(Math.floor(duration / 1000) % 60);
+								var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
+								var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
+								
+								var seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
+								var minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
+								var hours = hrs > 0 ? "%1:".arg(hrs) : ""
+								return hours+minutes+":"+seconds
+	                        }
+	                    }
+	                }
+	            ]
+	            
+	            horizontalAlignment: HorizontalAlignment.Fill
+	            verticalAlignment: VerticalAlignment.Fill
+	        }
+	        
+	        attachedObjects: [
+				AudioRecorder
+				{
+				    property string currentTrack
+				    property string currentUri
+				    
+					id: recorder
+					onDurationChanged: {
+						var secs = "%1".arg(Math.floor(duration / 1000) % 60);
+						var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
+						var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
+						
+						durationLabel.seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
+						durationLabel.minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
+						durationLabel.hours = hrs > 0 ? "%1:".arg(hrs) : ""
+					}
+					
+					onError: {
+					    mainPage.recording = false;
+					}
+				}
+            ]
 		}
 	}
 }

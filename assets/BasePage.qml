@@ -2,24 +2,33 @@ import bb.cascades 1.0
 
 Page {
     property alias contentContainer: contentContainer.controls
+    
+    function hideTitleBar() {
+        if (titleBar.visible) {
+            hider.play()
+        }
+    }
 
     Container {
-		background: back.imagePaint
+		background: Color.create("#2f5b78")
 		horizontalAlignment: HorizontalAlignment.Fill
 		verticalAlignment: VerticalAlignment.Fill
-		
-	    attachedObjects: [
-            ImagePaintDefinition {
-                id: back
-                imageSource: "asset:///images/background.amd"
-                repeatPattern: RepeatPattern.XY
-            }
-	    ]
         
 		Container
 		{
 		    id: titleBar
 		    layout: DockLayout {}
+		    
+		    animations: [
+		        TranslateTransition {
+		            id: hider
+		            toY: -300
+		            
+		            onEnded: {
+		                titleBar.visible = false
+		            }
+                }
+		    ]
 		
 		    horizontalAlignment: HorizontalAlignment.Fill
 		    verticalAlignment: VerticalAlignment.Top

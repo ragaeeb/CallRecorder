@@ -15,7 +15,7 @@ BasePage
 
     contentContainer: Container
     {
-        topPadding: 20; leftPadding: 20; rightPadding: 20;
+        leftPadding: 20; rightPadding: 20;
 
         horizontalAlignment: HorizontalAlignment.Center
         verticalAlignment: VerticalAlignment.Fill
