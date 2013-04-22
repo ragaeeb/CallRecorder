@@ -1,5 +1,7 @@
 import bb.cascades 1.0
 import bb.multimedia 1.0
+import bb.system 1.0
+import canadainc 1.0
 import Multimedia 1.0
 
 NavigationPane
@@ -57,20 +59,10 @@ NavigationPane
 	    }
 	    
 	    onCreationCompleted: {
-	        if ( app.getValueFor("autoRecord") == 1 ) {
+	        if ( persist.getValueFor("autoRecord") == 1 ) {
 	            recordButton.clicked()
 	        }
 	    }
-	    
-	    shortcuts: [
-	        SystemShortcut {
-	            type: SystemShortcuts.CreateNew
-	            
-	            onTriggered: {
-	                recordButton.clicked()
-	            }
-	        }
-	    ]
 	    
 	    id: mainPage
 	    contentContainer: Container
@@ -96,7 +88,7 @@ NavigationPane
                 
 		        onCreationCompleted:
 		        {
-		            if ( app.getValueFor("animations") == 1 ) {
+		            if ( persist.getValueFor("animations") == 1 ) {
     	                translateTransition.play()
 		            }
 		        }
@@ -118,15 +110,21 @@ NavigationPane
 			            defaultImageSource = "asset:///images/button_record.png"
 			            pressedImageSource = "asset:///images/button_record_down.png"
 			            
-			            theDataModel.insert( 0, {'uri': recorder.currentUri, 'title': recorder.currentTrack, 'duration': duration} );
+			            app.addRecording(recorder.currentUri, duration);
 	                } else {
     	                var now = Qt.formatDateTime( new Date(), "MMM d-yyyy h-mm-ss AP" );
-    	                var outDir = app.getValueFor("output")
+    	                var outDir = persist.getValueFor("output")
     	                var output = outDir+"/"+now+".m4a"
+    	                var outputUrl
     	                
-    	                recorder.currentTrack = now
+    	                if ( output.indexOf("file://") == -1 ) {
+    	                    outputUrl = "file://"+output
+    	                } else {
+    	                    outputUrl = output
+    	                }
+    	                
     	                recorder.currentUri = output
-    	                recorder.outputUrl = output
+    	                recorder.outputUrl = outputUrl
 	                    
 	                    recorder.record()
 			            defaultImageSource = "asset:///images/button_stop.png"
@@ -147,7 +145,7 @@ NavigationPane
                 
 		        onCreationCompleted:
 		        {
-		            if ( app.getValueFor("animations") == 1 ) {
+		            if ( persist.getValueFor("animations") == 1 ) {
     	                rotateTransition.play()
 		            }
 		        }
@@ -175,93 +173,72 @@ NavigationPane
                 
 		        onVisibleChanged:
 		        {
-		            if ( visible && app.getValueFor("animations") == 1 ) {
+		            if ( visible && persist.getValueFor("animations") == 1 ) {
     	                fadeTransition.play()
 		            }
 		        }
             }
             
-            Container {
+            Divider {
                 id: separator
-	            topMargin: 30
-                
-                horizontalAlignment: HorizontalAlignment.Fill
-                preferredHeight: 1
-                opacity: 0.5
-                background: Color.White
-                visible: false
+	            topMargin: 30; bottomMargin: 0
+                visible: app.numRecordings != 0
             }
             
             ListView
 	        {
 	            id: listView
 	            
-	            dataModel: ArrayDataModel {
-	                id: theDataModel
-	                
-	                onItemAdded: {
-	                    separator.visible = true
-	                }
-	                
-	                onItemRemoved: {
-	                    separator.visible = theDataModel.size() != 0
-	                }
-	            }
-	            
-	            onActivationChanged: {
-	                if (active) {
-	                    actionSet.activeIndexPath = indexPath
-	                }
-	            }
-	            
-	            onTriggered: {
-	                app.openRecording( "file://"+theDataModel.data(indexPath).uri )
-	            }
-	            
-	            contextActions: [
-	                ActionSet {
-        	            property variant activeIndexPath
-	                    id: actionSet
-	                    title: activeIndexPath ? theDataModel.data(activeIndexPath).title : ""
-	                    subtitle: {
-	                        if (activeIndexPath)
-	                        {
-		                        var duration = theDataModel.data(activeIndexPath).duration
-								var secs = "%1".arg(Math.floor(duration / 1000) % 60);
-								var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
-								var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
-								
-								var seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
-								var minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
-								var hours = hrs > 0 ? "%1:".arg(hrs) : ""
-								return hours+minutes+":"+seconds
-	                        } else {
-	                            return ""
-	                        }
-	                    }
+	            attachedObjects:
+	            [
+	                SystemPrompt {
+	                    property string originalName
+	                    property int index
+	                    property variant activeElement
 	                    
-	                    DeleteActionItem {
-	                        title: qsTr("Delete")
-	                        
-	                        onTriggered: {
-	                            var result = app.deleteRecording( theDataModel.data(actionSet.activeIndexPath).uri )
-	                            
-	                            if (result) {
-	                                theDataModel.removeAt(actionSet.activeIndexPath)
-	                            }
+	                    id: renameDialog
+	                    title: qsTr("New name") + Retranslate.onLanguageChanged
+	                    body: qsTr("Enter the name of the new file.") + Retranslate.onLanguageChanged
+	                    confirmButton.label: qsTr("Rename") + Retranslate.onLanguageChanged
+	                    confirmButton.enabled: inputFieldTextEntry().length > 0
+	                    cancelButton.label: qsTr("Cancel") + Retranslate.onLanguageChanged
+	                    inputField.defaultText: originalName
+	                    inputField.emptyText: qsTr("New name") + Retranslate.onLanguageChanged
+	                    
+	                    onFinished: {
+	                        if (result == SystemUiResult.ConfirmButtonSelection) {
+	                            app.renameRecording( index, inputFieldTextEntry() )
 	                        }
 	                    }
 	                }
 	            ]
-	
+	            
+	            function deleteRecording(index) {
+	                app.deleteRecording(index)
+	            }
+	            
+	            function renameRecording(ListItemData, index) {
+	                renameDialog.originalName = ListItemData.title
+	                renameDialog.index = index[0]
+	                renameDialog.show()
+	            }
+	            
+	            dataModel: app.getDataModel()
+
+	            onTriggered: {
+	                app.openRecording(indexPath)
+	            }
+	            
 	            listItemComponents: [
 	                ListItemComponent {
 	                    StandardListItem {
+	                        id: rootItem
+	                        
 	                        title: ListItemData.title
 	                        status: {
 	                            var duration = ListItemData.duration
-								var secs = "%1".arg(Math.floor(duration / 1000) % 60);
-								var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
+								var secs = Math.floor(duration / 1000) % 60;
+								var mins = Math.floor((duration / (1000 * 60) ) % 60);
 								var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
 								
 								var seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
@@ -269,6 +246,30 @@ NavigationPane
 								var hours = hrs > 0 ? "%1:".arg(hrs) : ""
 								return hours+minutes+":"+seconds
 	                        }
+	                        
+				            contextActions: [
+				                ActionSet {
+				                    title: rootItem.title
+				                    subtitle: rootItem.status
+				                    
+				                    ActionItem {
+				                        title: qsTr("Rename") + Retranslate.onLanguageChanged
+				                        imageSource: "file:///usr/share/icons/ic_edit.png"
+				                        
+				                        onTriggered: {
+				                        	rootItem.ListItem.view.renameRecording(ListItemData, rootItem.ListItem.indexPath)
+                                		}
+				                    }
+				                    
+				                    DeleteActionItem {
+				                        title: qsTr("Delete") + Retranslate.onLanguageChanged
+				                        
+				                        onTriggered: {
+				                            rootItem.ListItem.view.deleteRecording(rootItem.ListItem.indexPath)
+				                        }
+				                    }
+				                }
+				            ]
 	                    }
 	                }
 	            ]
@@ -280,13 +281,12 @@ NavigationPane
 	        attachedObjects: [
 				AudioRecorder
 				{
-				    property string currentTrack
 				    property string currentUri
 				    
 					id: recorder
 					onDurationChanged: {
-						var secs = "%1".arg(Math.floor(duration / 1000) % 60);
-						var mins = "%1".arg(Math.floor((duration / (1000 * 60) ) % 60));
+						var secs = Math.floor(duration / 1000) % 60;
+						var mins = Math.floor((duration / (1000 * 60) ) % 60);
 						var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
 						
 						durationLabel.seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
@@ -297,6 +297,16 @@ NavigationPane
 					onError: {
 					    mainPage.recording = false;
 					}
+				},
+				
+				PhoneService {
+				    onConnectedStateChanged: {
+				        if (connected && persist.getValueFor("autoRecord") == 2 && !mainPage.recording) {
+				            recordButton.clicked()
+				        } else if (!connected && persist.getValueFor("autoEnd") == 1 && mainPage.recording) {
+				            recordButton.clicked()
+				        }
+				    }
 				}
             ]
 		}

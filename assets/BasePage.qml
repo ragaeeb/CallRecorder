@@ -54,7 +54,7 @@ Page {
 		        
 		        onCreationCompleted:
 		        {
-		            if ( app.getValueFor("animations") == 1 ) {
+		            if ( persist.getValueFor("animations") == 1 ) {
 		                translate.play()
 		            }
 		        }
@@ -97,8 +97,7 @@ Page {
 			        
 			        onCreationCompleted:
 			        {
-			            if ( app.getValueFor("animations") == 1 )
-			            {
+			            if ( persist.getValueFor("animations") == 1 ) {
 			                translateFade.play()
 			            }
 			        }
@@ -114,7 +113,6 @@ Page {
             
             id: contentContainer
             objectName: "contentContainer"
-            background: titleBar.background
             
             horizontalAlignment: HorizontalAlignment.Fill
             verticalAlignment: VerticalAlignment.Fill

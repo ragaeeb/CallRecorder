@@ -14,7 +14,7 @@ Sheet
                 
                 onTriggered: {
                     if (hideNextTime.checked) {
-                        app.saveValueFor("hideAgreement", 1);
+                        persist.saveValueFor("hideAgreement", 1);
                     }
                     
                     root.close();

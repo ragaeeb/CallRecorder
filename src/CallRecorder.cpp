@@ -1,8 +1,9 @@
 #include "CallRecorder.hpp"
 #include "Logger.h"
+#include "PhoneService.h"
 
 #include <bb/system/InvokeManager>
-#include <bb/system/SystemToast>
+#include <bb/system/SystemPrompt>
 
 #include <bb/cascades/AbstractDialog>
 #include <bb/cascades/AbstractPane>
@@ -12,26 +13,42 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/SceneCover>
 
+#include <bb/cascades/pickers/FilePicker>
+
+#include <bb/multimedia/MediaError>
+#include <bb/multimedia/MediaState>
+
 namespace callrecorder {
 
 using namespace bb::cascades;
-using namespace bb::system;
+using namespace canadainc;
 
-CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_toast(NULL)
+CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm(this)
 {
-	if ( getValueFor("autoRecord").isNull() ) { // first run
-		saveValueFor("animations", 1);
-		saveValueFor("autoRecord", 0);
-		saveValueFor("hideAgreement", 0);
+	INIT_SETTING("animations", 1);
+	INIT_SETTING("autoRecord", 0);
+	INIT_SETTING("hideAgreement", 0);
+	INIT_SETTING("autoEnd", 1);
+	INIT_SETTING("rejectShort", 10);
 
+	if ( m_persistance.getValueFor("output").isNull() ) // first run
+	{
 		QString sdDirectory("/accounts/1000/removable/sdcard/voice");
 
 		if ( !QDir(sdDirectory).exists() ) {
 			sdDirectory = "/accounts/1000/shared/voice";
 		}
 
-		saveValueFor("output", sdDirectory);
+		m_persistance.saveValueFor("output", sdDirectory);
 	}
+
+	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
+	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");
+	qmlRegisterUncreatableType<bb::cascades::pickers::FilePickerMode>("CustomComponent", 1, 0, "FilePickerMode", "Can't instantiate");
+	qmlRegisterType<bb::system::SystemPrompt>("bb.system", 1, 0, "SystemPrompt");
+	qmlRegisterType<PhoneService>("canadainc", 1, 0, "PhoneService");
+	qmlRegisterUncreatableType<bb::multimedia::MediaError>("Multimedia", 1, 0, "MediaError", "Can't instantiate");
+	qmlRegisterUncreatableType<bb::multimedia::MediaState>("Multimedia", 1, 0, "MediaState", "Can't instantiate");
 
 	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);
 	Control* sceneRoot = qmlCover->createRootObject<Control>();
@@ -41,16 +58,18 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_toa
     QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
     qml->setContextProperty("app", this);
     qml->setContextProperty("cover", sceneRoot);
+    qml->setContextProperty("persist", &m_persistance);
 
     AbstractPane *root = qml->createRootObject<AbstractPane>();
     app->setScene(root);
 
-    if ( getValueFor("hideAgreement").toInt() == 0 )
+    if ( m_persistance.getValueFor("hideAgreement").toInt() == 0 )
     {
     	LOGGER("Creating agreement dialog");
 
         QmlDocument* agreementQML = QmlDocument::create("asset:///Agreement.qml").parent(root);
         agreementQML->setContextProperty("app", this);
+        agreementQML->setContextProperty("persist", &m_persistance);
 
         AbstractDialog* dialog = agreementQML->createRootObject<AbstractDialog>();
         dialog->setParent(root);
@@ -61,73 +80,69 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_toa
 }
 
 
-void CallRecorder::create(bb::cascades::Application* app) {
+void CallRecorder::create(Application* app) {
 	new CallRecorder(app);
 }
 
 
-QVariant CallRecorder::getValueFor(QString const &objectName)
+bool CallRecorder::deleteRecording(int index)
 {
-    QVariant value( m_settings.value(objectName) );
-	LOGGER("getValueFor()" << objectName << value);
+	QString file = getElement(index).value("uri").toString();
+	LOGGER("Delete recording" << file << index);
 
-    return value;
-}
-
-
-void CallRecorder::saveValueFor(QString const& objectName, QVariant const& inputValue)
-{
-	LOGGER("saveValueFor()" << objectName << inputValue);
-	m_settings.setValue(objectName, inputValue);
-}
-
-
-void CallRecorder::showToast(const QString& message)
-{
-	if (m_toast == NULL) {
-		m_toast = new SystemToast(this);
-	}
-
-	m_toast->setBody(message);
-	m_toast->show();
-}
-
-
-bool CallRecorder::deleteRecording(const QString& file)
-{
 	QFile f(file);
 	bool result = f.remove();
 
 	if (result) {
-		showToast( tr("Deleted %1").arg(file) );
+		m_persistance.showToast( tr("Deleted %1").arg(file) );
+		m_adm.removeAt(index);
+		emit recordingCountChanged();
 	} else {
-		showToast( tr("Could not delete %1").arg(file) );
+		m_persistance.showToast( tr("Could not delete %1").arg(file) );
 	}
 
 	return result;
 }
 
 
-bool CallRecorder::renameRecording(const QString& file, const QString& newName)
+bool CallRecorder::renameRecording(int index, QString newName)
 {
+	QVariantMap map = getElement(index);
+	QString file = map.value("uri").toString();
+	LOGGER(file << newName);
+
+	newName = newName+file.mid( file.lastIndexOf(".") ); // add extension
+
+	LOGGER("Renaming" << file << newName << index);
+
 	QFile f(file);
-	bool result = f.rename(newName);
+	QString renamed = file.left( file.lastIndexOf("/")+1 ) + newName;
+	bool result = f.rename(renamed);
 
 	if (result) {
-		showToast( tr("Renamed %1 to %2").arg(file).arg(newName) );
+		QString title = newName.left( newName.lastIndexOf(".") );
+
+		m_persistance.showToast( tr("Renamed %1 to %2").arg(file).arg(title) );
+		map["uri"] = renamed;
+		map["title"] = title;
+		m_adm.replace(index, map);
 	} else {
-		showToast( tr("Could not rename %1 to %2").arg(file).arg(newName) );
+		m_persistance.showToast( tr("Could not rename %1 to %2").arg(file).arg(newName) );
 	}
 
 	return result;
 }
 
 
-void CallRecorder::openRecording(const QString& file)
+void CallRecorder::openRecording(int index)
 {
-	InvokeManager invokeManager;
+	QVariantMap map = getElement(index);
+	QString file = "file://"+map.value("uri").toString();
+	LOGGER(file << index);
 
-	InvokeRequest request;
+	bb::system::InvokeManager invokeManager;
+
+	bb::system::InvokeRequest request;
 	request.setTarget("sys.mediaplayer.previewer");
 	request.setAction("bb.action.OPEN");
 	request.setMimeType("audio/m4a");
@@ -137,8 +152,58 @@ void CallRecorder::openRecording(const QString& file)
 }
 
 
-CallRecorder::~CallRecorder()
+QVariantMap CallRecorder::getElement(int index) const {
+	return m_adm.value(index).toMap();
+}
+
+
+void CallRecorder::addRecording(QString const& uri, unsigned int duration)
 {
+	unsigned int minimumLengthAllowed = m_persistance.getValueFor("rejectShort").toInt() * 1000;
+	LOGGER(uri << duration << minimumLengthAllowed);
+
+	if (duration < minimumLengthAllowed) {
+		LOGGER("Too short, removing");
+		QFile f(uri);
+		bool result = f.remove();
+
+		if (result) {
+			m_persistance.showToast( tr("Rejected recording!") );
+		}
+
+		LOGGER("Removed" << result);
+	} else {
+		QString title = uri.mid( uri.lastIndexOf("/")+1 );
+		title = title.left( title.lastIndexOf(".") );
+
+		LOGGER(title);
+
+		QVariantMap map;
+		map["uri"] = uri;
+		map["title"] = title;
+		map["duration"] = duration;
+
+		m_adm.insert(0, map);
+
+		LOGGER( "Data model now has " << map << m_adm.size() );
+
+		emit recordingCountChanged();
+	}
+}
+
+
+QVariant CallRecorder::getDataModel() {
+	return QVariant::fromValue(&m_adm);
+}
+
+
+int CallRecorder::numRecordings() const {
+	return m_adm.size();
+}
+
+
+CallRecorder::~CallRecorder() {
+	m_adm.setParent(NULL);
 }
 
 } // callrecorder
