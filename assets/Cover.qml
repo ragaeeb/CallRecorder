@@ -7,7 +7,7 @@ Container
     attachedObjects: [
         ImagePaintDefinition {
             id: back
-            imageSource: "asset:///images/cover_bg.png"
+            imageSource: "images/cover_bg.png"
         }
     ]
     
@@ -18,7 +18,7 @@ Container
     verticalAlignment: VerticalAlignment.Center
     
     ImageView {
-        imageSource: "asset:///images/logo.png"
+        imageSource: "images/logo.png"
         topMargin: 0
         leftMargin: 0
         rightMargin: 0

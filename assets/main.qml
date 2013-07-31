@@ -96,8 +96,8 @@ NavigationPane
 	        ImageButton {
 	            id: recordButton
 	            topMargin: 100
-	            defaultImageSource: "asset:///images/button_record.png"
-	            pressedImageSource: "asset:///images/button_record_down.png"
+	            defaultImageSource: "images/button_record.png"
+	            pressedImageSource: "images/button_record_down.png"
 	            horizontalAlignment: HorizontalAlignment.Center
 	            
 	            onClicked: {
@@ -106,8 +106,8 @@ NavigationPane
 	                if (mainPage.recording) {
 	                    var duration = recorder.duration
 	                    recorder.reset()
-			            defaultImageSource = "asset:///images/button_record.png"
-			            pressedImageSource = "asset:///images/button_record_down.png"
+			            defaultImageSource = "images/button_record.png"
+			            pressedImageSource = "images/button_record_down.png"
 			            
 			            app.addRecording(recorder.currentUri, duration);
 	                } else {
@@ -126,8 +126,8 @@ NavigationPane
     	                recorder.outputUrl = outputUrl
 	                    
 	                    recorder.record()
-			            defaultImageSource = "asset:///images/button_stop.png"
-			            pressedImageSource = "asset:///images/button_stop_down.png"
+			            defaultImageSource = "images/button_stop.png"
+			            pressedImageSource = "images/button_stop_down.png"
 	                }
 	                
 	                mainPage.recording = !mainPage.recording
