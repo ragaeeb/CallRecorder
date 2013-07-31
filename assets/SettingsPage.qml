@@ -66,20 +66,6 @@ BasePage
 	                }
 	            }
 	        }
-	        
-	        SettingPair {
-	            topMargin: 20
-	            title: qsTr("Animations")
-	        	key: "animations"
-	    
-	            toggle.onCheckedChanged: {
-	        		if (checked) {
-	        		    infoText.text = qsTr("Controls will be animated whenever they are loaded.")
-	        		} else {
-	        		    infoText.text = qsTr("Controls will be snapped into position without animations.")
-	        		}
-	            }
-	        }
 	
 	        PersistDropDown {
 	            title: qsTr("Auto-Record") + Retranslate.onLanguageChanged
@@ -119,7 +105,7 @@ BasePage
 	        }
 	        
 	        SettingPair {
-	            topMargin: 20
+	            topPadding: 20
 	            title: qsTr("Auto-End on Disconnect")
 	            key: "autoEnd"
 	    
@@ -133,9 +119,10 @@ BasePage
 	        }
 	        
 	        SettingPair {
-	            topMargin: 20
+	            topPadding: 20
 	            title: qsTr("Reject if < 10 seconds")
 	            key: "rejectShort"
+	            bottomPadding: 40
 	    
 	            toggle.onCheckedChanged: {
 	        		if (checked) {
@@ -144,24 +131,6 @@ BasePage
 	        		    infoText.text = qsTr("Recordings less than 10 seconds in duration will be allowed.")
 	        		}
 	            }
-	        }
-	        
-	        SettingPair {
-	            topMargin: 20
-	            title: qsTr("Hide Agreement Dialog")
-	        	toggle.checked: persist.getValueFor("hideAgreement") == 1
-	    
-	            toggle.onCheckedChanged: {
-	        		persist.saveValueFor("hideAgreement", checked ? 1 : 0)
-	        		
-	        		if (checked) {
-	        		    infoText.text = qsTr("The legal advice agreement dialog will be hidden on startup.")
-	        		} else {
-	        		    infoText.text = qsTr("The legal advice agreement dialog will be displayed on startup.")
-	        		}
-	            }
-	            
-	            bottomPadding: 40
 	        }
 	        
 	        Label {

@@ -12,7 +12,6 @@ using namespace canadainc;
 
 CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm(this)
 {
-	INIT_SETTING("animations", 1);
 	INIT_SETTING("autoRecord", 0);
 	INIT_SETTING("hideAgreement", 0);
 	INIT_SETTING("autoEnd", 1);
