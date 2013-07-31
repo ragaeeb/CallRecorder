@@ -70,11 +70,9 @@ BasePage
 	        SettingPair {
 	            topMargin: 20
 	            title: qsTr("Animations")
-	        	toggle.checked: persist.getValueFor("animations") == 1
+	        	key: "animations"
 	    
 	            toggle.onCheckedChanged: {
-	        		persist.saveValueFor("animations", checked ? 1 : 0)
-	        		
 	        		if (checked) {
 	        		    infoText.text = qsTr("Controls will be animated whenever they are loaded.")
 	        		} else {
@@ -83,31 +81,33 @@ BasePage
 	            }
 	        }
 	
-	        DropDown {
+	        PersistDropDown {
 	            title: qsTr("Auto-Record") + Retranslate.onLanguageChanged
 	            horizontalAlignment: HorizontalAlignment.Fill
+	            key: "autoRecord"
 	
 	            Option {
 	                text: qsTr("Off") + Retranslate.onLanguageChanged
 	                description: qsTr("No automatic recording.") + Retranslate.onLanguageChanged
-	                selected: persist.getValueFor("autoRecord") == 0
+	                imageSource: "images/ic_mobile.png"
+	                value: 0
 	            }
 	
 	            Option {
 	                text: qsTr("On App Start") + Retranslate.onLanguageChanged
 	                description: qsTr("Recording will begin as soon as the app is loaded.") + Retranslate.onLanguageChanged
-	                selected: persist.getValueFor("autoRecord") == 1
+	                imageSource: "images/ic_app_start.png"
+	                value: 1
 	            }
 	
 	            Option {
 	                text: qsTr("On Call Connected") + Retranslate.onLanguageChanged
 	                description: qsTr("Recording will begin as soon as the call is connected.") + Retranslate.onLanguageChanged
-	                selected: persist.getValueFor("autoRecord") == 2
+	                imageSource: "images/ic_call_connected.png"
+	                value: 2
 	            }
 	
 	            onSelectedIndexChanged: {
-	                persist.saveValueFor("autoRecord", selectedIndex);
-	                
 	                if (selectedIndex == 0) {
 	                    infoText.text = qsTr("Recording will begin once the user taps the record button.");
 	                } else if (selectedIndex == 1) {
@@ -121,11 +121,9 @@ BasePage
 	        SettingPair {
 	            topMargin: 20
 	            title: qsTr("Auto-End on Disconnect")
-	        	toggle.checked: persist.getValueFor("autoEnd") == 1
+	            key: "autoEnd"
 	    
 	            toggle.onCheckedChanged: {
-	        		persist.saveValueFor("autoEnd", checked ? 1 : 0)
-	        		
 	        		if (checked) {
 	        		    infoText.text = qsTr("Recording will end as soon as the call is disconnected.")
 	        		} else {
@@ -137,11 +135,9 @@ BasePage
 	        SettingPair {
 	            topMargin: 20
 	            title: qsTr("Reject if < 10 seconds")
-	        	toggle.checked: persist.getValueFor("rejectShort") != 0
+	            key: "rejectShort"
 	    
 	            toggle.onCheckedChanged: {
-	        		persist.saveValueFor("rejectShort", checked ? 10 : 0)
-	        		
 	        		if (checked) {
 	        		    infoText.text = qsTr("Recordings less than 10 seconds in duration will be immediately deleted.")
 	        		} else {

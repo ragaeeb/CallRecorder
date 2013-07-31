@@ -234,6 +234,7 @@ NavigationPane
 	                        id: rootItem
 	                        
 	                        title: ListItemData.title
+	                        imageSource: "images/ic_recording.png"
 	                        status: {
 	                            var duration = ListItemData.duration
 								var secs = Math.floor(duration / 1000) % 60;
@@ -253,7 +254,7 @@ NavigationPane
 				                    
 				                    ActionItem {
 				                        title: qsTr("Rename") + Retranslate.onLanguageChanged
-				                        imageSource: "file:///usr/share/icons/ic_edit.png"
+				                        imageSource: "images/ic_rename.png"
 				                        
 				                        onTriggered: {
 				                        	rootItem.ListItem.view.renameRecording(ListItemData, rootItem.ListItem.indexPath)
@@ -262,6 +263,7 @@ NavigationPane
 				                    
 				                    DeleteActionItem {
 				                        title: qsTr("Delete") + Retranslate.onLanguageChanged
+				                        imageSource: "images/ic_delete.png"
 				                        
 				                        onTriggered: {
 				                            rootItem.ListItem.view.deleteRecording(rootItem.ListItem.indexPath)
