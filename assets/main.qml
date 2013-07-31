@@ -1,8 +1,7 @@
 import bb.cascades 1.0
 import bb.multimedia 1.0
 import bb.system 1.0
-import canadainc 1.0
-import Multimedia 1.0
+import com.canadainc.data 1.0
 
 NavigationPane
 {

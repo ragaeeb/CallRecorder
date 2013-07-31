@@ -1,4 +1,4 @@
-#include <bb/cascades/Application>
+#include "precompiled.h"
 
 #include "CallRecorder.hpp"
 #include "Logger.h"

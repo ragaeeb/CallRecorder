@@ -1,22 +1,9 @@
+#include "precompiled.h"
+
 #include "CallRecorder.hpp"
 #include "Logger.h"
+#include "IOUtils.h"
 #include "PhoneService.h"
-
-#include <bb/system/InvokeManager>
-#include <bb/system/SystemPrompt>
-
-#include <bb/cascades/AbstractDialog>
-#include <bb/cascades/AbstractPane>
-#include <bb/cascades/Application>
-#include <bb/cascades/ArrayDataModel>
-#include <bb/cascades/Control>
-#include <bb/cascades/QmlDocument>
-#include <bb/cascades/SceneCover>
-
-#include <bb/cascades/pickers/FilePicker>
-
-#include <bb/multimedia/MediaError>
-#include <bb/multimedia/MediaState>
 
 namespace callrecorder {
 
@@ -31,24 +18,14 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm
 	INIT_SETTING("autoEnd", 1);
 	INIT_SETTING("rejectShort", 10);
 
-	if ( m_persistance.getValueFor("output").isNull() ) // first run
-	{
-		QString sdDirectory("/accounts/1000/removable/sdcard/voice");
-
-		if ( !QDir(sdDirectory).exists() ) {
-			sdDirectory = "/accounts/1000/shared/voice";
-		}
-
-		m_persistance.saveValueFor("output", sdDirectory);
+	if ( m_persistance.getValueFor("output").isNull() ) {
+		m_persistance.saveValueFor( "output", IOUtils::setupOutputDirectory("voice", "call_recorder") );
 	}
 
 	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
 	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");
 	qmlRegisterUncreatableType<bb::cascades::pickers::FilePickerMode>("CustomComponent", 1, 0, "FilePickerMode", "Can't instantiate");
-	qmlRegisterType<bb::system::SystemPrompt>("bb.system", 1, 0, "SystemPrompt");
-	qmlRegisterType<PhoneService>("canadainc", 1, 0, "PhoneService");
-	qmlRegisterUncreatableType<bb::multimedia::MediaError>("Multimedia", 1, 0, "MediaError", "Can't instantiate");
-	qmlRegisterUncreatableType<bb::multimedia::MediaState>("Multimedia", 1, 0, "MediaState", "Can't instantiate");
+	qmlRegisterType<PhoneService>("com.canadainc.data", 1, 0, "PhoneService");
 
 	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);
 	Control* sceneRoot = qmlCover->createRootObject<Control>();

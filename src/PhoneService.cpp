@@ -1,3 +1,5 @@
+#include "precompiled.h"
+
 #include "PhoneService.h"
 #include "Logger.h"
 
