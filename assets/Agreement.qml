@@ -42,4 +42,8 @@ Sheet
             bottomPadding: 30; leftPadding: 20; rightPadding: 20;
         }
     }
+    
+    onClosed: {
+        destroy();
+    }
 }

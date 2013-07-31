@@ -27,8 +27,12 @@ class CallRecorder : public QObject
     CallRecorder(bb::cascades::Application* app);
     QVariantMap getElement(int index) const;
 
+private slots:
+	void init();
+
 Q_SIGNALS:
 	void recordingCountChanged();
+	void initialize();
 
 public:
     static void create(bb::cascades::Application* app);

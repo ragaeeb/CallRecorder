@@ -122,6 +122,7 @@ BasePage
 	            topPadding: 20
 	            title: qsTr("Reject if < 10 seconds")
 	            key: "rejectShort"
+	            value: 10
 	            bottomPadding: 40
 	    
 	            toggle.onCheckedChanged: {

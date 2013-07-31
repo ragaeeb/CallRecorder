@@ -52,11 +52,8 @@ Page {
 		            }
 		        ]
 		        
-		        onCreationCompleted:
-		        {
-		            if ( persist.getValueFor("animations") == 1 ) {
-		                translate.play()
-		            }
+		        onCreationCompleted: {
+                    translate.play();
 		        }
 		    }
 
@@ -95,11 +92,8 @@ Page {
                         }
 			        ]
 			        
-			        onCreationCompleted:
-			        {
-			            if ( persist.getValueFor("animations") == 1 ) {
-			                translateFade.play()
-			            }
+			        onCreationCompleted: {
+                        translateFade.play();
 			        }
 			    }
             }

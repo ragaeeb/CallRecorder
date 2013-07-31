@@ -3,6 +3,8 @@
 #include "CallRecorder.hpp"
 #include "Logger.h"
 #include "IOUtils.h"
+#include "InvocationUtils.h"
+#include "LazyAudioRecorder.h"
 #include "PhoneService.h"
 
 namespace callrecorder {
@@ -13,17 +15,12 @@ using namespace canadainc;
 CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm(this)
 {
 	INIT_SETTING("autoRecord", 0);
-	INIT_SETTING("hideAgreement", 0);
-	INIT_SETTING("autoEnd", 1);
-	INIT_SETTING("rejectShort", 10);
 
 	if ( m_persistance.getValueFor("output").isNull() ) {
 		m_persistance.saveValueFor( "output", IOUtils::setupOutputDirectory("voice", "call_recorder") );
 	}
 
-	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
-	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");
-	qmlRegisterUncreatableType<bb::cascades::pickers::FilePickerMode>("CustomComponent", 1, 0, "FilePickerMode", "Can't instantiate");
+	qmlRegisterType<LazyAudioRecorder>("com.canadainc.data", 1, 0, "LazyAudioRecorder");
 	qmlRegisterType<PhoneService>("com.canadainc.data", 1, 0, "PhoneService");
 
 	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);
@@ -39,20 +36,36 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm
     AbstractPane *root = qml->createRootObject<AbstractPane>();
     app->setScene(root);
 
+    connect( this, SIGNAL( initialize() ), this, SLOT( init() ), Qt::QueuedConnection ); // async startup
+    emit initialize();
+}
+
+
+void CallRecorder::init()
+{
+	INIT_SETTING("hideAgreement", 0);
+	INIT_SETTING("autoEnd", 1);
+	INIT_SETTING("rejectShort", 10);
+
+	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
+	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");
+	qmlRegisterUncreatableType<bb::cascades::pickers::FilePickerMode>("CustomComponent", 1, 0, "FilePickerMode", "Can't instantiate");
+
     if ( m_persistance.getValueFor("hideAgreement").toInt() == 0 )
     {
     	LOGGER("Creating agreement dialog");
 
-        QmlDocument* agreementQML = QmlDocument::create("asset:///Agreement.qml").parent(root);
+        QmlDocument* agreementQML = QmlDocument::create("asset:///Agreement.qml").parent(this);
         agreementQML->setContextProperty("app", this);
         agreementQML->setContextProperty("persist", &m_persistance);
 
         AbstractDialog* dialog = agreementQML->createRootObject<AbstractDialog>();
-        dialog->setParent(root);
 
         LOGGER("Open agreement dialog");
         dialog->open();
     }
+
+    InvocationUtils::validateSharedFolderAccess( tr("Warning: It seems like the app does not have access to your Shared Folder. This permission is needed for the app to save the recordings to your file system. If you leave this permission off, the app may not work properly.") );
 }
 
 
@@ -113,18 +126,10 @@ bool CallRecorder::renameRecording(int index, QString newName)
 void CallRecorder::openRecording(int index)
 {
 	QVariantMap map = getElement(index);
-	QString file = "file://"+map.value("uri").toString();
+	QString file = map.value("uri").toString();
 	LOGGER(file << index);
 
-	bb::system::InvokeManager invokeManager;
-
-	bb::system::InvokeRequest request;
-	request.setTarget("sys.mediaplayer.previewer");
-	request.setAction("bb.action.OPEN");
-	request.setMimeType("audio/m4a");
-	request.setUri( QUrl(file) );
-
-	invokeManager.invoke(request);
+	InvocationUtils::launchAudio(file);
 }
 
 
