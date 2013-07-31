@@ -29,6 +29,20 @@ NavigationPane
                 navigationPane.push(settingsPage);
             }
         }
+        
+        actions: [
+            ActionItem {
+                title: qsTr("Bug Reports") + Retranslate.onLanguageChanged
+                imageSource: "images/ic_bugs.png"
+                
+                onTriggered: {
+                    definition.source = "BugReportPage.qml";
+                    var bugReportPage = definition.createObject();
+                    bugReportPage.projectName = "call-recorder10";
+                    navigationPane.push(bugReportPage);
+                }
+            }
+        ]
 
         helpAction: HelpActionItem
         {
