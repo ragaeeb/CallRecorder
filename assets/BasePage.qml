@@ -1,9 +1,11 @@
 import bb.cascades 1.0
 
-Page {
+Page
+{
     property alias contentContainer: contentContainer.controls
     
-    function hideTitleBar() {
+    function hideTitleBar()
+    {
         if (titleBar.visible) {
             hider.play()
         }
@@ -74,7 +76,8 @@ Page {
 			        verticalAlignment: VerticalAlignment.Center
 			
 			        animations: [
-			            ParallelAnimation {
+			            ParallelAnimation
+			            {
 			                id: translateFade
 			                
 				            FadeTransition {

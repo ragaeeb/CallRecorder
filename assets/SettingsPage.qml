@@ -1,18 +1,18 @@
 import bb.cascades 1.0
 import CustomComponent 1.0
 
-BasePage
+Page
 {
-    contentContainer: ScrollView
+    ScrollView
     {
         horizontalAlignment: HorizontalAlignment.Fill
         verticalAlignment: VerticalAlignment.Fill
         
 	    Container
 	    {
-	        leftPadding: 20
-	        rightPadding: 20
-	        bottomPadding: 20
+	        leftPadding: 10
+	        rightPadding: 10
+	        bottomPadding: 10
 	        horizontalAlignment: HorizontalAlignment.Fill
 	        verticalAlignment: VerticalAlignment.Fill
 	        
@@ -67,7 +67,8 @@ BasePage
 	            }
 	        }
 	
-	        PersistDropDown {
+	        PersistDropDown
+	        {
 	            title: qsTr("Auto-Record") + Retranslate.onLanguageChanged
 	            horizontalAlignment: HorizontalAlignment.Fill
 	            key: "autoRecord"
@@ -104,12 +105,13 @@ BasePage
 	            }
 	        }
 	        
-	        SettingPair {
-	            topPadding: 20
-	            title: qsTr("Auto-End on Disconnect")
+            PersistCheckBox
+            {
+                topMargin: 20
+                text: qsTr("Auto-End on Disconnect") + Retranslate.onLanguageChanged
 	            key: "autoEnd"
 	    
-	            toggle.onCheckedChanged: {
+	            onCheckedChanged: {
 	        		if (checked) {
 	        		    infoText.text = qsTr("Recording will end as soon as the call is disconnected.")
 	        		} else {
@@ -118,14 +120,14 @@ BasePage
 	            }
 	        }
 	        
-	        SettingPair {
-	            topPadding: 20
-	            title: qsTr("Reject if < 10 seconds")
+	        PersistCheckBox
+	        {
+	            topMargin: 20; bottomMargin: 40
+	            text: qsTr("Reject if < 10 seconds") + Retranslate.onLanguageChanged
 	            key: "rejectShort"
 	            value: 10
-	            bottomPadding: 40
 	    
-	            toggle.onCheckedChanged: {
+	            onCheckedChanged: {
 	        		if (checked) {
 	        		    infoText.text = qsTr("Recordings less than 10 seconds in duration will be immediately deleted.")
 	        		} else {

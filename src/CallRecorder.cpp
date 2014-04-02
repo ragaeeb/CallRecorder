@@ -6,6 +6,7 @@
 #include "InvocationUtils.h"
 #include "LazyAudioRecorder.h"
 #include "PhoneService.h"
+#include "TextUtils.h"
 
 namespace callrecorder {
 
@@ -22,6 +23,7 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm
 
 	qmlRegisterType<LazyAudioRecorder>("com.canadainc.data", 1, 0, "LazyAudioRecorder");
 	qmlRegisterType<PhoneService>("com.canadainc.data", 1, 0, "PhoneService");
+	qmlRegisterType<TextUtils>("com.canadainc.data", 1, 0, "TextUtils");
 
 	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);
 	Control* sceneRoot = qmlCover->createRootObject<Control>();
@@ -43,27 +45,12 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm
 
 void CallRecorder::init()
 {
-	INIT_SETTING("hideAgreement", 0);
 	INIT_SETTING("autoEnd", 1);
 	INIT_SETTING("rejectShort", 10);
 
 	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
 	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");
 	qmlRegisterUncreatableType<bb::cascades::pickers::FilePickerMode>("CustomComponent", 1, 0, "FilePickerMode", "Can't instantiate");
-
-    if ( m_persistance.getValueFor("hideAgreement").toInt() == 0 )
-    {
-    	LOGGER("Creating agreement dialog");
-
-        QmlDocument* agreementQML = QmlDocument::create("asset:///Agreement.qml").parent(this);
-        agreementQML->setContextProperty("app", this);
-        agreementQML->setContextProperty("persist", &m_persistance);
-
-        AbstractDialog* dialog = agreementQML->createRootObject<AbstractDialog>();
-
-        LOGGER("Open agreement dialog");
-        dialog->open();
-    }
 
     InvocationUtils::validateSharedFolderAccess( tr("Warning: It seems like the app does not have access to your Shared Folder. This permission is needed for the app to save the recordings to your file system. If you leave this permission off, the app may not work properly.") );
 }
@@ -83,11 +70,11 @@ bool CallRecorder::deleteRecording(int index)
 	bool result = f.remove();
 
 	if (result) {
-		m_persistance.showToast( tr("Deleted %1").arg(file) );
+		m_persistance.showToast( tr("Deleted %1").arg(file), "", "asset:///images/toast/ic_delete_recording.png" );
 		m_adm.removeAt(index);
 		emit recordingCountChanged();
 	} else {
-		m_persistance.showToast( tr("Could not delete %1").arg(file) );
+		m_persistance.showToast( tr("Could not delete %1").arg(file), "", "asset:///images/toast/warning.png" );
 	}
 
 	return result;
@@ -111,12 +98,12 @@ bool CallRecorder::renameRecording(int index, QString newName)
 	if (result) {
 		QString title = newName.left( newName.lastIndexOf(".") );
 
-		m_persistance.showToast( tr("Renamed %1 to %2").arg(file).arg(title) );
+		m_persistance.showToast( tr("Renamed %1 to %2").arg(file).arg(title), "", "asset:///images/ic_rename.png" );
 		map["uri"] = renamed;
 		map["title"] = title;
 		m_adm.replace(index, map);
 	} else {
-		m_persistance.showToast( tr("Could not rename %1 to %2").arg(file).arg(newName) );
+		m_persistance.showToast( tr("Could not rename %1 to %2").arg(file).arg(newName), "", "asset:///images/toast/warning.png" );
 	}
 
 	return result;

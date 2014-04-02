@@ -6,65 +6,22 @@ import com.canadainc.data 1.0
 NavigationPane
 {
     id: navigationPane
-    
-    attachedObjects: [
-        ComponentDefinition {
-            id: definition
-        }
-    ]
 
-    Menu.definition: MenuDefinition
+    Menu.definition: CanadaIncMenu
     {
-        settingsAction: SettingsActionItem
-        {
-            property Page settingsPage
-            
-            onTriggered:
-            {
-                if (!settingsPage) {
-                    definition.source = "SettingsPage.qml"
-                    settingsPage = definition.createObject()
-                }
-                
-                navigationPane.push(settingsPage);
-            }
-        }
-        
-        actions: [
-            ActionItem {
-                title: qsTr("Bug Reports") + Retranslate.onLanguageChanged
-                imageSource: "images/ic_bugs.png"
-                
-                onTriggered: {
-                    definition.source = "BugReportPage.qml";
-                    var bugReportPage = definition.createObject();
-                    bugReportPage.projectName = "call-recorder10";
-                    navigationPane.push(bugReportPage);
-                }
-            }
-        ]
-
-        helpAction: HelpActionItem
-        {
-            property Page helpPage
-            
-            onTriggered:
-            {
-                if (!helpPage) {
-                    definition.source = "HelpPage.qml"
-                    helpPage = definition.createObject();
-                }
-
-                navigationPane.push(helpPage);
-            }
-        }
+        id: menuDef
+        bbWorldID: "24152879"
+        projectName: "call-recorder10"
+        promoteChannel: true
     }
 
     onPopTransitionEnded: {
         page.destroy();
     }
 
-	BasePage {
+	BasePage
+	{
+        id: mainPage
 	    property bool recording: false
 	    
 	    onRecordingChanged: {
@@ -77,7 +34,6 @@ NavigationPane
 	        }
 	    }
 	    
-	    id: mainPage
 	    contentContainer: Container
 	    {
 	        topPadding: 20; rightPadding: 20; leftPadding: 20
@@ -138,8 +94,6 @@ NavigationPane
                             mainPage.recording = !mainPage.recording;
 	                    } else {
 	                        persist.showBlockingToast( qsTr("Cannot record due to an error. This usually indicates that either the app does not have the permissions it needs to record, or the output directory is not set up properly!"), qsTr("OK") );
-                            persist.showBlockingToast( qsTr("To fix this issue please try the following:\n\n1) Swipe-down from the top-bezel in this app.\n2) Go to Settings.\n3) Make sure the output directory is pointing to a valid location."), qsTr("OK") );
-                            persist.showBlockingToast( qsTr("Or try the following:\n\n1) Exit the app.\n2) From your BB10 home screen, swipe down from the top-bezel, go to Settings.\n3) Security & Privacy.\n4) Application Permissions.\n5) Call Recorder\n6) Make sure the app has all the permissions it needs."), qsTr("OK") );
 	                    }
 	                }
 	            }
@@ -163,7 +117,6 @@ NavigationPane
 	            textStyle.fontSize: FontSize.Small
 	            textStyle.textAlign: TextAlign.Center
 	            horizontalAlignment: HorizontalAlignment.Fill
-                text: qsTr("%1%2:%3").arg(recorder.durationHours).arg(recorder.durationMinutes).arg(recorder.durationSeconds)
                 visible: recorder.recording
 	            
 		        animations: [
@@ -203,6 +156,8 @@ NavigationPane
                         ListView
                         {
                             id: listView
+                            horizontalAlignment: HorizontalAlignment.Fill
+                            verticalAlignment: VerticalAlignment.Fill
                             
                             attachedObjects:
                             [
@@ -225,6 +180,10 @@ NavigationPane
                                             app.renameRecording( index, inputFieldTextEntry() )
                                         }
                                     }
+                                },
+                                
+                                TextUtils {
+                                    id: textUtil
                                 }
                             ]
                             
@@ -245,23 +204,15 @@ NavigationPane
                             }
                             
                             listItemComponents: [
-                                ListItemComponent {
-                                    StandardListItem {
+                                ListItemComponent
+                                {
+                                    StandardListItem
+                                    {
                                         id: rootItem
                                         
                                         title: ListItemData.title
                                         imageSource: "images/ic_recording.png"
-                                        status: {
-                                            var duration = ListItemData.duration
-                                            var secs = Math.floor(duration / 1000) % 60;
-                                            var mins = Math.floor((duration / (1000 * 60) ) % 60);
-                                            var hrs = Math.floor((duration / (1000 * 60 * 60) ) % 24);
-                                            
-                                            var seconds = secs >= 10 ? "%1".arg(secs) : "0%1".arg(secs)
-                                            var minutes = mins >= 10 ? "%1".arg(mins) : "0%1".arg(mins)
-                                            var hours = hrs > 0 ? "%1:".arg(hrs) : ""
-                                            return "%1%2:%3".arg(hours).arg(minutes).arg(seconds);
-                                        }
+                                        status: ListItem.view.textUtil.formatTime(ListItemData.duration)
                                         
                                         contextActions: [
                                             ActionSet {
@@ -279,7 +230,7 @@ NavigationPane
                                                 
                                                 DeleteActionItem {
                                                     title: qsTr("Delete") + Retranslate.onLanguageChanged
-                                                    imageSource: "images/ic_delete.png"
+                                                    imageSource: "images/menu/ic_delete.png"
                                                     
                                                     onTriggered: {
                                                         rootItem.ListItem.view.deleteRecording(rootItem.ListItem.indexPath)
@@ -290,9 +241,6 @@ NavigationPane
                                     }
                                 }
                             ]
-                            
-                            horizontalAlignment: HorizontalAlignment.Fill
-                            verticalAlignment: VerticalAlignment.Fill
                         }
                     }
                 }
@@ -307,6 +255,10 @@ NavigationPane
 					    mainPage.recording = false;
                         persist.showBlockingToast( "Error encountered...", qsTr("OK") );
 					}
+					
+					onDurationChanged: {
+                        durationLabel.text = textUtil.formatTime(recorder.duration);
+					}
 				},
 				
 				PhoneService {
@@ -320,5 +272,12 @@ NavigationPane
 				}
             ]
 		}
+	}
+	
+	onCreationCompleted: {
+	    if ( !persist.contains("hideAgreement") ) {
+            persist.showToast( qsTr("Warning: Recording phone calls may not be permitted under local law. You should confirm that this is permitted before continuing."), qsTr("OK"), "asset:///images/toast/warning.png" );
+	        persist.saveValueFor("hideAgreement", 1);
+	    }
 	}
 }
