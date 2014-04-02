@@ -4,36 +4,23 @@
 #include "Logger.h"
 #include "IOUtils.h"
 #include "InvocationUtils.h"
-#include "LazyAudioRecorder.h"
-#include "PhoneService.h"
-#include "TextUtils.h"
 
 namespace callrecorder {
 
 using namespace bb::cascades;
 using namespace canadainc;
 
-CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm(this)
+CallRecorder::CallRecorder(bb::cascades::Application *app) :
+        QObject(app), m_adm(this), m_cover("Cover.qml")
 {
-	INIT_SETTING("autoRecord", 0);
-
-	if ( m_persistance.getValueFor("output").isNull() ) {
-		m_persistance.saveValueFor( "output", IOUtils::setupOutputDirectory("voice", "call_recorder") );
-	}
-
-	qmlRegisterType<LazyAudioRecorder>("com.canadainc.data", 1, 0, "LazyAudioRecorder");
 	qmlRegisterType<PhoneService>("com.canadainc.data", 1, 0, "PhoneService");
-	qmlRegisterType<TextUtils>("com.canadainc.data", 1, 0, "TextUtils");
-
-	QmlDocument* qmlCover = QmlDocument::create("asset:///Cover.qml").parent(this);
-	Control* sceneRoot = qmlCover->createRootObject<Control>();
-	SceneCover* cover = SceneCover::create().content(sceneRoot);
-	app->setCover(cover);
 
     QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
     qml->setContextProperty("app", this);
-    qml->setContextProperty("cover", sceneRoot);
     qml->setContextProperty("persist", &m_persistance);
+    qml->setContextProperty("formatter", &m_textUtils);
+    qml->setContextProperty("recorder", &m_recorder);
+    qml->setContextProperty("phone", &m_phone);
 
     AbstractPane *root = qml->createRootObject<AbstractPane>();
     app->setScene(root);
@@ -45,8 +32,15 @@ CallRecorder::CallRecorder(bb::cascades::Application *app) : QObject(app), m_adm
 
 void CallRecorder::init()
 {
+    INIT_SETTING("autoRecord", 0);
 	INIT_SETTING("autoEnd", 1);
 	INIT_SETTING("rejectShort", 10);
+
+    m_cover.setContext("recorder", &m_recorder);
+
+    if ( m_persistance.getValueFor("output").isNull() ) {
+        m_persistance.saveValueFor( "output", IOUtils::setupOutputDirectory("voice", "call_recorder") );
+    }
 
 	qmlRegisterType<bb::cascades::pickers::FilePicker>("CustomComponent", 1, 0, "FilePicker");
 	qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("CustomComponent", 1, 0, "FileType", "Can't instantiate");

@@ -1,5 +1,6 @@
 #include "LazyAudioRecorder.h"
 #include "Logger.h"
+#include "TextUtils.h"
 
 #include <bb/multimedia/AudioRecorder>
 
@@ -59,7 +60,7 @@ bool LazyAudioRecorder::record()
 	if (m_recorder == NULL) {
 		LOGGER("=========== CREATING FOR FIRST TIME!");
 		m_recorder = new AudioRecorder(this);
-		connect( m_recorder, SIGNAL( durationChanged(unsigned int) ), this, SIGNAL( durationChanged() ) );
+		connect( m_recorder, SIGNAL( durationChanged(unsigned int) ), this, SLOT( onDurationChanged(unsigned int) ) );
 		connect( m_recorder, SIGNAL( error(bb::multimedia::MediaError::Type, unsigned int) ), this, SLOT( onError(bb::multimedia::MediaError::Type, unsigned int) ) );
 		connect( m_recorder, SIGNAL( mediaStateChanged(bb::multimedia::MediaState::Type) ), this, SLOT( onMediaStateChanged(bb::multimedia::MediaState::Type) ) );
 
@@ -75,6 +76,12 @@ void LazyAudioRecorder::reset()
 	if (m_recorder != NULL) {
 		m_recorder->reset();
 	}
+}
+
+
+void LazyAudioRecorder::onDurationChanged(unsigned int duration)
+{
+    emit durationChanged( TextUtils::formatTime(duration) );
 }
 
 

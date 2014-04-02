@@ -2,8 +2,6 @@ import bb.cascades 1.0
 
 Container
 {
-    property bool active: false
-    
     attachedObjects: [
         ImagePaintDefinition {
             id: back
@@ -29,14 +27,7 @@ Container
     }
     
     Label {
-        text: {
-            if (active) {
-                return qsTr("Recording...")
-            } else {
-                return qsTr("Idle")
-            }
-        }
-        
+        text: recorder.recording ? qsTr("Recording...") : qsTr("Idle")
         horizontalAlignment: HorizontalAlignment.Fill
         textStyle.textAlign: TextAlign.Center
         textStyle.base: SystemDefaults.TextStyles.SubtitleText

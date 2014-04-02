@@ -1,7 +1,11 @@
 #ifndef CallRecorder_HPP_
 #define CallRecorder_HPP_
 
+#include "LazyAudioRecorder.h"
+#include "LazySceneCover.h"
 #include "Persistance.h"
+#include "PhoneService.h"
+#include "TextUtils.h"
 
 #include <bb/cascades/ArrayDataModel>
 
@@ -23,6 +27,10 @@ class CallRecorder : public QObject
 
     bb::cascades::ArrayDataModel m_adm;
     Persistance m_persistance;
+    TextUtils m_textUtils;
+    LazyAudioRecorder m_recorder;
+    LazySceneCover m_cover;
+    PhoneService m_phone;
 
     CallRecorder(bb::cascades::Application* app);
     QVariantMap getElement(int index) const;

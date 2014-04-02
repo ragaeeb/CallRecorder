@@ -1,7 +1,5 @@
 import bb.cascades 1.0
-import bb.multimedia 1.0
 import bb.system 1.0
-import com.canadainc.data 1.0
 
 NavigationPane
 {
@@ -23,10 +21,6 @@ NavigationPane
 	{
         id: mainPage
 	    property bool recording: false
-	    
-	    onRecordingChanged: {
-	        cover.active = recording
-	    }
 	    
 	    onCreationCompleted: {
 	        if ( persist.getValueFor("autoRecord") == 1 ) {
@@ -158,10 +152,12 @@ NavigationPane
                             id: listView
                             horizontalAlignment: HorizontalAlignment.Fill
                             verticalAlignment: VerticalAlignment.Fill
+                            property variant textUtil: formatter
                             
                             attachedObjects:
                             [
-                                SystemPrompt {
+                                SystemPrompt
+                                {
                                     property string originalName
                                     property int index
                                     property variant activeElement
@@ -180,10 +176,6 @@ NavigationPane
                                             app.renameRecording( index, inputFieldTextEntry() )
                                         }
                                     }
-                                },
-                                
-                                TextUtils {
-                                    id: textUtil
                                 }
                             ]
                             
@@ -191,7 +183,8 @@ NavigationPane
                                 app.deleteRecording(index)
                             }
                             
-                            function renameRecording(ListItemData, index) {
+                            function renameRecording(ListItemData, index)
+                            {
                                 renameDialog.originalName = ListItemData.title
                                 renameDialog.index = index[0]
                                 renameDialog.show()
@@ -245,39 +238,37 @@ NavigationPane
                     }
                 }
             }
-	        
-	        attachedObjects: [
-				LazyAudioRecorder
-				{
-                    id: recorder
-					
-					onErrorDetected: {
-					    mainPage.recording = false;
-                        persist.showBlockingToast( "Error encountered...", qsTr("OK") );
-					}
-					
-					onDurationChanged: {
-                        durationLabel.text = textUtil.formatTime(recorder.duration);
-					}
-				},
-				
-				PhoneService {
-				    onConnectedStateChanged: {
-				        if (connected && persist.getValueFor("autoRecord") == 2 && !mainPage.recording) {
-				            recordButton.clicked();
-				        } else if (!connected && persist.getValueFor("autoEnd") == 1 && mainPage.recording) {
-				            recordButton.clicked();
-				        }
-				    }
-				}
-            ]
 		}
 	}
 	
+    function onErrorDetected(mediaError, position)
+    {
+        mainPage.recording = false;
+        persist.showBlockingToast( "Error encountered...", qsTr("OK") );
+    }
+    
+    function onDurationChanged(durationText) {
+        durationLabel.text = durationText;
+    }
+
+    function onConnectedStateChanged(connected)
+    {
+        if (connected && persist.getValueFor("autoRecord") == 2 && !mainPage.recording) {
+            recordButton.clicked();
+        } else if (!connected && persist.getValueFor("autoEnd") == 1 && mainPage.recording) {
+            recordButton.clicked();
+        }
+    }
+	
 	onCreationCompleted: {
-	    if ( !persist.contains("hideAgreement") ) {
+	    if ( !persist.contains("hideAgreement") )
+	    {
             persist.showToast( qsTr("Warning: Recording phone calls may not be permitted under local law. You should confirm that this is permitted before continuing."), qsTr("OK"), "asset:///images/toast/warning.png" );
 	        persist.saveValueFor("hideAgreement", 1);
 	    }
+	    
+        recorder.durationChanged.connect(onDurationChanged);
+        recorder.errorDetected.connect(onErrorDetected);
+        phone.connectedStateChanged.connect(onConnectedStateChanged);
 	}
 }

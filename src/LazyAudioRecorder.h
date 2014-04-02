@@ -29,11 +29,12 @@ class LazyAudioRecorder : public QObject
 private slots:
 	void onError(bb::multimedia::MediaError::Type mediaError, unsigned int position);
 	void onMediaStateChanged(bb::multimedia::MediaState::Type mediaState);
+	void onDurationChanged(unsigned int);
 
 Q_SIGNALS:
 	void recordingStateChanged();
 	void errorDetected();
-	void durationChanged();
+	void durationChanged(QString const& duration);
 
 public:
 	LazyAudioRecorder(QObject* parent=NULL);
